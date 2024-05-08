@@ -6,5 +6,5 @@ Releases are managed by [@vpsnak](https://github.com/vpsnak) for this repository
 2. `rm -rf node_modules package-lock.json`
 3. `npm install`
 4. `npm run build`
-5. `npm publish`
+5. `npm publish --access=public`
 6. Create a new GitHub release for this version with the release notes

@@ -1,6 +1,5 @@
 import fs from 'fs'
 import { AddressInfo } from 'net'
-import os from 'os'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import colors from 'picocolors'
@@ -184,9 +183,6 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                         server.config.logger.info(`\n  ${colors.red(`${colors.bold('WORDPRESS')}`)}  ${colors.dim('plugin')}`)
                         server.config.logger.info('')
                         server.config.logger.info(`  ${colors.green('➜')}  ${colors.bold('APP_URL')}: ${colors.cyan(appUrl.replace(/:(\d+)/, (_, port) => `:${colors.bold(port)}`))}`)
-
-                        if (typeof resolvedConfig.server.https === 'object' && typeof resolvedConfig.server.https.key === 'string') {
-                        }
                     }, 100)
                 }
             })
@@ -342,7 +338,7 @@ function resolveDevServerUrl(address: AddressInfo, config: ResolvedConfig, userC
     const configHmrHost = typeof config.server.hmr === 'object' ? config.server.hmr.host : null
     const configHost = typeof config.server.host === 'string' ? config.server.host : null
     const serverAddress = isIpv6(address) ? `[${address.address}]` : address.address
-    const host = configHmrHost ?? configHost ?? serverAddress
+    const host = configHmrHost ?? configHost ?? serverAddress ?? userConfig.server?.host
 
     const configHmrClientPort = typeof config.server.hmr === 'object' ? config.server.hmr.clientPort : null
     const port = configHmrClientPort ?? address.port
