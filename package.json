@@ -10,7 +10,7 @@
     "homepage": "https://github.com/spiritdigitalagency/wordpress-vite-plugin",
     "repository": {
         "type": "git",
-        "url": "https://github.com/spiritdigitalagency/wordpress-vite-plugin"
+        "url": "git+https://github.com/spiritdigitalagency/wordpress-vite-plugin.git"
     },
     "license": "MIT",
     "author": "Spirit Digital",
