@@ -1,5 +1,5 @@
 {
-    "name": "wordpress-vite-plugin",
+    "name": "@spiritdigital/wordpress-vite-plugin",
     "version": "0.1.0",
     "description": "Wordpress plugin for Vite.",
     "keywords": [

@@ -1,9 +1,9 @@
 # Wordpress Vite Plugin
 
-<a href="https://github.com/laravel/vite-plugin/actions"><img src="https://github.com/laravel/vite-plugin/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://www.npmjs.com/package/laravel-vite-plugin"><img src="https://img.shields.io/npm/dt/laravel-vite-plugin" alt="Total Downloads"></a>
-<a href="https://www.npmjs.com/package/laravel-vite-plugin"><img src="https://img.shields.io/npm/v/laravel-vite-plugin" alt="Latest Stable Version"></a>
-<a href="https://www.npmjs.com/package/laravel-vite-plugin"><img src="https://img.shields.io/npm/l/laravel-vite-plugin" alt="License"></a>
+<a href="https://github.com/spiritdigitalagency/wordpress-vite-plugin/actions"><img src="https://github.com/spiritdigitalagency/wordpress-vite-plugin/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://www.npmjs.com/package/@spiritdigital/wordpress-vite-plugin"><img src="https://img.shields.io/npm/dt/@spiritdigital/wordpress-vite-plugin" alt="Total Downloads"></a>
+<a href="https://www.npmjs.com/package/@spiritdigital/wordpress-vite-plugin"><img src="https://img.shields.io/npm/v/@spiritdigital/wordpress-vite-plugin" alt="Latest Stable Version"></a>
+<a href="https://www.npmjs.com/package/@spiritdigital/wordpress-vite-plugin"><img src="https://img.shields.io/npm/l/@spiritdigital/wordpress-vite-plugin" alt="License"></a>
 
 ## Introduction
 
