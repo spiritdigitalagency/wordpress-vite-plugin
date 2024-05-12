@@ -73,7 +73,7 @@ type DevServerUrl = `${'http'|'https'}://${string}:${number}`
 let exitHandlersBound = false
 
 export const refreshPaths = [
-    'resources/**'
+    'resources/**/js'
 ].filter(path => fs.existsSync(path.replace(/\*\*$/, '')))
 
 /**
@@ -180,9 +180,11 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                     fs.writeFileSync(pluginConfig.hotFile, viteDevServerUrl)
 
                     setTimeout(() => {
-                        server.config.logger.info(`\n  ${colors.red(`${colors.bold('WORDPRESS')}`)}  ${colors.dim('plugin')}`)
                         server.config.logger.info('')
-                        server.config.logger.info(`  ${colors.green('➜')}  ${colors.bold('APP_URL')}: ${colors.cyan(appUrl.replace(/:(\d+)/, (_, port) => `:${colors.bold(port)}`))}`)
+                        server.config.logger.info(`  ${colors.green(colors.bold("Plugin for Wordpress"))} ${colors.dim(`v${pluginVersion()}`)}`);
+                        server.config.logger.info('')
+                        server.config.logger.info(`  ${colors.green('➜')}  ${colors.dim("Powered by")} ${colors.cyan(colors.bold("Spirit Digital"))}`);
+                        server.config.logger.info(`  ${colors.green('➜')}  ${colors.dim("https://github.com/spiritdigitalagency/wordpress-vite-plugin")}`);
                     }, 100)
                 }
             })
@@ -214,6 +216,17 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                 next()
             })
         }
+    }
+}
+
+/**
+ * The version of the Wordpress Vite plugin being run.
+ */
+function pluginVersion(): string {
+    try {
+        return JSON.parse(fs.readFileSync(path.join(dirname(), '../package.json')).toString())?.version
+    } catch {
+        return ''
     }
 }
 
