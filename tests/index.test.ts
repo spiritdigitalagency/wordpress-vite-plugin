@@ -9,7 +9,7 @@ vi.mock('fs', async () => {
         default: {
             ...actual,
             existsSync: (path: string) => [
-                'resources/'
+                'resources/js/'
             ].includes(path) || actual.existsSync(path)
         }
     }
@@ -298,7 +298,7 @@ describe('wordpress-vite-plugin', () => {
         /** @ts-ignore */
         expect(plugins[1].__wordpress_plugin_config).toEqual({
             paths: [
-                'resources/**',
+                'resources/js/**',
             ],
         })
     })

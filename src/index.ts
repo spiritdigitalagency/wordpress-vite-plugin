@@ -73,7 +73,7 @@ type DevServerUrl = `${'http'|'https'}://${string}:${number}`
 let exitHandlersBound = false
 
 export const refreshPaths = [
-    'resources/**/js'
+    'resources/js/**'
 ].filter(path => fs.existsSync(path.replace(/\*\*$/, '')))
 
 /**
@@ -177,7 +177,7 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                 const isAddressInfo = (x: string|AddressInfo|null|undefined): x is AddressInfo => typeof x === 'object'
                 if (isAddressInfo(address)) {
                     viteDevServerUrl = userConfig.server?.origin ? userConfig.server.origin as DevServerUrl : resolveDevServerUrl(address, server.config, userConfig)
-                    fs.writeFileSync(pluginConfig.hotFile, viteDevServerUrl)
+                    fs.writeFileSync(pluginConfig.hotFile, `${viteDevServerUrl}${server.config.base.replace(/\/$/, '')}`)
 
                     setTimeout(() => {
                         server.config.logger.info('')
@@ -313,7 +313,7 @@ function resolveOutDir(config: Required<PluginConfig>, ssr: boolean): string|und
 
 function resolveFullReloadConfig({ refresh: config }: Required<PluginConfig>): PluginOption[]{
     if (typeof config === 'boolean') {
-        return [];
+        return []
     }
 
     if (typeof config === 'string') {
@@ -330,6 +330,7 @@ function resolveFullReloadConfig({ refresh: config }: Required<PluginConfig>): P
 
     return (config as RefreshConfig[]).flatMap(c => {
         const plugin = fullReload(c.paths, c.config)
+        console.log(c, plugin)
 
         /* eslint-disable-next-line @typescript-eslint/ban-ts-comment */
         /** @ts-ignore */
