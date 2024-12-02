@@ -331,7 +331,6 @@ function resolveFullReloadConfig({ refresh: config }: Required<PluginConfig>): P
 
     return (config as RefreshConfig[]).flatMap(c => {
         const plugin = fullReload(c.paths, c.config)
-        console.log(c, plugin)
 
         /* eslint-disable-next-line @typescript-eslint/ban-ts-comment */
         /** @ts-ignore */
