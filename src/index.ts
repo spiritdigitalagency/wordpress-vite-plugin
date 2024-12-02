@@ -5,12 +5,13 @@ import path from 'path'
 import colors from 'picocolors'
 import { Plugin, loadEnv, UserConfig, ConfigEnv, ResolvedConfig, SSROptions, PluginOption } from 'vite'
 import fullReload, { Config as FullReloadConfig } from 'vite-plugin-full-reload'
+import { InputOption } from "rollup"
 
 interface PluginConfig {
     /**
      * The path or paths of the entry points to compile.
      */
-    input: string|string[]
+    input: InputOption
 
     /**
      * Wordpress's public directory.
@@ -36,7 +37,7 @@ interface PluginConfig {
     /**
      * The path of the SSR entry point.
      */
-    ssr?: string|string[]
+    ssr?: InputOption
 
     /**
      * The directory where the SSR bundle should be written.
@@ -292,7 +293,7 @@ function resolveBase(config: Required<PluginConfig>, assetUrl: string): string {
 /**
  * Resolve the Vite input path from the configuration.
  */
-function resolveInput(config: Required<PluginConfig>, ssr: boolean): string|string[]|undefined {
+function resolveInput(config: Required<PluginConfig>, ssr: boolean): InputOption|undefined {
     if (ssr) {
         return config.ssr
     }
