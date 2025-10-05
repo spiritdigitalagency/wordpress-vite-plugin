@@ -1,9 +1,10 @@
 import fs from 'fs'
 import { AddressInfo } from 'net'
+import os from 'os'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import colors from 'picocolors'
-import { Plugin, loadEnv, UserConfig, ConfigEnv, ResolvedConfig, SSROptions, PluginOption } from 'vite'
+import { Plugin, loadEnv, UserConfig, ConfigEnv, ResolvedConfig, SSROptions, PluginOption, Rollup, createLogger } from 'vite'
 import fullReload, { Config as FullReloadConfig } from 'vite-plugin-full-reload'
 import { InputOption } from "rollup"
 
@@ -55,6 +56,21 @@ interface PluginConfig {
     refresh?: boolean|string|string[]|RefreshConfig|RefreshConfig[]
 
     /**
+     * Utilise the Herd or Valet TLS certificates.
+     *
+     * @default null
+     */
+    detectTls?: string|boolean|null,
+
+    /**
+     * Utilise the Herd or Valet TLS certificates.
+     *
+     * @default null
+     * @deprecated use "detectTls" instead
+     */
+    valetTls?: string|boolean|null,
+
+    /**
      * Transform the code while serving.
      */
     transformOnServe?: (code: string, url: DevServerUrl) => string,
@@ -76,6 +92,10 @@ let exitHandlersBound = false
 export const refreshPaths = [
     'resources/js/**'
 ].filter(path => fs.existsSync(path.replace(/\*\*$/, '')))
+
+const logger = createLogger('info', {
+    prefix: '[wordpress-vite-plugin]'
+})
 
 /**
  * Wordpress plugin for Vite.
@@ -128,8 +148,12 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                     assetsInlineLimit: userConfig.build?.assetsInlineLimit ?? 0,
                 },
                 server: {
-                    origin: userConfig.server?.origin ?? '__wordpress_vite_placeholder__',
-                    ...(userConfig.server),
+                    origin: userConfig.server?.origin ?? 'http://__wordpress_vite_placeholder__.test',
+                    cors: userConfig.server?.cors ?? {
+                        origin: userConfig.server?.origin ?? [
+                            /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/, // Copied from Vite itself. We can import this once we drop 5.0 support and require Vite 6.1+. Source: https://github.com/vitejs/vite/blob/0c854645bd17960abbe8f01b602d1a1da1a2b9fd/packages/vite/src/node/constants.ts#L200-L201
+                        ],
+                    },
                     ...(serverConfig ? {
                         host: userConfig.server?.host ?? serverConfig.host,
                         hmr: userConfig.server?.hmr === false ? false : {
@@ -163,7 +187,7 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
         },
         transform(code) {
             if (resolvedConfig.command === 'serve') {
-                code = code.replace(/__wordpress_vite_placeholder__/g, viteDevServerUrl)
+                code = code.replace(/http:\/\/__wordpress_vite_placeholder__\.test/g, viteDevServerUrl)
 
                 return pluginConfig.transformOnServe(code, viteDevServerUrl)
             }
@@ -178,6 +202,17 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                 const isAddressInfo = (x: string|AddressInfo|null|undefined): x is AddressInfo => typeof x === 'object'
                 if (isAddressInfo(address)) {
                     viteDevServerUrl = userConfig.server?.origin ? userConfig.server.origin as DevServerUrl : resolveDevServerUrl(address, server.config, userConfig)
+
+                    const hotFileParentDirectory = path.dirname(pluginConfig.hotFile);
+
+                    if (! fs.existsSync(hotFileParentDirectory)) {
+                        fs.mkdirSync(hotFileParentDirectory, { recursive: true })
+
+                        setTimeout(() => {
+                            logger.info(`Hot file directory created ${colors.dim(fs.realpathSync(hotFileParentDirectory))}`, { clear: true, timestamp: true })
+                        }, 200)
+                    }
+
                     fs.writeFileSync(pluginConfig.hotFile, `${viteDevServerUrl}${server.config.base.replace(/\/$/, '')}`)
 
                     setTimeout(() => {
@@ -273,7 +308,7 @@ function resolvePluginConfig(config: string|string[]|PluginConfig): Required<Plu
 
     return {
         input: config.input,
-        publicDirectory: (config.publicDirectory ?? 'public'),
+        publicDirectory: config.publicDirectory ?? 'public',
         buildDirectory: config.buildDirectory ?? 'build',
         ssr: config.ssr ?? config.input,
         ssrOutputDirectory: config.ssrOutputDirectory ?? 'bootstrap/ssr',
@@ -314,7 +349,7 @@ function resolveOutDir(config: Required<PluginConfig>, ssr: boolean): string|und
 
 function resolveFullReloadConfig({ refresh: config }: Required<PluginConfig>): PluginOption[]{
     if (typeof config === 'boolean') {
-        return []
+        return [];
     }
 
     if (typeof config === 'string') {
