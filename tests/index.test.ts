@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import fs from 'fs'
 import wordpress from '../src'
 import { resolvePageComponent } from '../src/inertia-helpers';
-import path from 'path';
 
 vi.mock('fs', async () => {
     const actual = await vi.importActual<typeof import('fs')>('fs')
