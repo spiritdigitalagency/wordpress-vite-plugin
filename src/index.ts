@@ -56,21 +56,6 @@ interface PluginConfig {
     refresh?: boolean|string|string[]|RefreshConfig|RefreshConfig[]
 
     /**
-     * Utilise the Herd or Valet TLS certificates.
-     *
-     * @default null
-     */
-    detectTls?: string|boolean|null,
-
-    /**
-     * Utilise the Herd or Valet TLS certificates.
-     *
-     * @default null
-     * @deprecated use "detectTls" instead
-     */
-    valetTls?: string|boolean|null,
-
-    /**
      * Transform the code while serving.
      */
     transformOnServe?: (code: string, url: DevServerUrl) => string,
@@ -154,6 +139,7 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                             /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/, // Copied from Vite itself. We can import this once we drop 5.0 support and require Vite 6.1+. Source: https://github.com/vitejs/vite/blob/0c854645bd17960abbe8f01b602d1a1da1a2b9fd/packages/vite/src/node/constants.ts#L200-L201
                         ],
                     },
+                    ...(userConfig.server),
                     ...(serverConfig ? {
                         host: userConfig.server?.host ?? serverConfig.host,
                         hmr: userConfig.server?.hmr === false ? false : {
