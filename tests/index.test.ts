@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import fs from 'fs'
 import wordpress from '../src'
 import { resolvePageComponent } from '../src/inertia-helpers';
+
+// Vite 8 reads build.rolldownOptions, Vite 7 build.rollupOptions; the suite runs against both.
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const buildInput = (config: any) => (config.build.rolldownOptions ?? config.build.rollupOptions).input
 
 vi.mock('fs', async () => {
     const actual = await vi.importActual<typeof import('fs')>('fs')
@@ -36,10 +41,10 @@ describe('wordpress-vite-plugin', () => {
         const plugin = wordpress('resources/js/app.ts')[0]
 
         const config = plugin.config({}, { command: 'build', mode: 'production' })
-        expect(config.build.rollupOptions.input).toBe('resources/js/app.ts')
+        expect(buildInput(config)).toBe('resources/js/app.ts')
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toBe('resources/js/app.ts')
+        expect(buildInput(ssrConfig)).toBe('resources/js/app.ts')
     })
 
     it('accepts an array of inputs', () => {
@@ -49,10 +54,10 @@ describe('wordpress-vite-plugin', () => {
         ])[0]
 
         const config = plugin.config({}, { command: 'build', mode: 'production' })
-        expect(config.build.rollupOptions.input).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
+        expect(buildInput(config)).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
+        expect(buildInput(ssrConfig)).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
     })
 
     it('accepts a full configuration', () => {
@@ -68,13 +73,13 @@ describe('wordpress-vite-plugin', () => {
         expect(config.base).toBe('/other-build/')
         expect(config.build.manifest).toBe('manifest.json')
         expect(config.build.outDir).toBe('other-public/other-build')
-        expect(config.build.rollupOptions.input).toBe('resources/js/app.ts')
+        expect(buildInput(config)).toBe('resources/js/app.ts')
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
         expect(ssrConfig.base).toBe('/other-build/')
         expect(ssrConfig.build.manifest).toBe(false)
         expect(ssrConfig.build.outDir).toBe('other-ssr-output')
-        expect(ssrConfig.build.rollupOptions.input).toBe('resources/js/ssr.ts')
+        expect(buildInput(ssrConfig)).toBe('resources/js/ssr.ts')
     })
 
     it('accepts a single input within a full configuration', () => {
@@ -84,10 +89,10 @@ describe('wordpress-vite-plugin', () => {
         })[0]
 
         const config = plugin.config({}, { command: 'build', mode: 'production' })
-        expect(config.build.rollupOptions.input).toBe('resources/js/app.ts')
+        expect(buildInput(config)).toBe('resources/js/app.ts')
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toBe('resources/js/ssr.ts')
+        expect(buildInput(ssrConfig)).toBe('resources/js/ssr.ts')
     })
 
     it('accepts an array of inputs within a full configuration', () => {
@@ -97,10 +102,10 @@ describe('wordpress-vite-plugin', () => {
         })[0]
 
         const config = plugin.config({}, { command: 'build', mode: 'production' })
-        expect(config.build.rollupOptions.input).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
+        expect(buildInput(config)).toEqual(['resources/js/app.ts', 'resources/js/other.js'])
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toEqual(['resources/js/ssr.ts', 'resources/js/other.js'])
+        expect(buildInput(ssrConfig)).toEqual(['resources/js/ssr.ts', 'resources/js/other.js'])
     })
 
     it('accepts an input object within a full configuration', () => {
@@ -110,10 +115,10 @@ describe('wordpress-vite-plugin', () => {
         })[0]
 
         const config = plugin.config({}, { command: 'build', mode: 'production' })
-        expect(config.build.rollupOptions.input).toEqual({ app: 'resources/js/entrypoint-browser.js' })
+        expect(buildInput(config)).toEqual({ app: 'resources/js/entrypoint-browser.js' })
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toEqual({ ssr: 'resources/js/entrypoint-ssr.js' })
+        expect(buildInput(ssrConfig)).toEqual({ ssr: 'resources/js/entrypoint-ssr.js' })
     })
 
     it('respects the users build.manifest config option', () => {
@@ -162,13 +167,13 @@ describe('wordpress-vite-plugin', () => {
         expect(config.base).toBe('/build/')
         expect(config.build.manifest).toBe('manifest.json')
         expect(config.build.outDir).toBe('public/build')
-        expect(config.build.rollupOptions.input).toBe('resources/js/app.js')
+        expect(buildInput(config)).toBe('resources/js/app.js')
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
         expect(ssrConfig.base).toBe('/build/')
         expect(ssrConfig.build.manifest).toBe(false)
         expect(ssrConfig.build.outDir).toBe('bootstrap/ssr')
-        expect(ssrConfig.build.rollupOptions.input).toBe('resources/js/ssr.js')
+        expect(buildInput(ssrConfig)).toBe('resources/js/ssr.js')
     })
 
     it('uses the default entry point when ssr entry point is not provided', () => {
@@ -176,7 +181,7 @@ describe('wordpress-vite-plugin', () => {
         const plugin = wordpress('resources/js/ssr.js')[0]
 
         const ssrConfig = plugin.config({ build: { ssr: true } }, { command: 'build', mode: 'production' })
-        expect(ssrConfig.build.rollupOptions.input).toBe('resources/js/ssr.js')
+        expect(buildInput(ssrConfig)).toBe('resources/js/ssr.js')
     })
 
     it('prefixes the base with ASSET_URL in production mode', () => {
@@ -411,6 +416,88 @@ describe('wordpress-vite-plugin', () => {
             paths: ['another/to/watch/**'],
             config: { delay: 123 }
         })
+    })
+})
+
+describe('assets', () => {
+    it('does not include assets plugin when no assets are configured', () => {
+        const plugins = wordpress('resources/js/app.ts')
+
+        expect(plugins.find(plugin => plugin.name === 'wordpress:assets')).toBeUndefined()
+    })
+
+    it('emits assets as static assets when assets is a string', () => {
+        const plugins = wordpress({
+            input: 'resources/js/app.ts',
+            assets: 'tests/__data__/*.png',
+        })
+
+        const assetsPlugin = plugins.find(plugin => plugin.name === 'wordpress:assets')!
+        const emitFile = vi.fn()
+
+        /* @ts-ignore */
+        assetsPlugin.buildStart!.call({ emitFile })
+
+        expect(emitFile).toHaveBeenCalledWith({ type: 'asset', name: 'dummy.png', originalFileName: expect.stringContaining('dummy.png'), source: expect.any(Buffer) })
+    })
+
+    it('emits assets as static assets when assets is an array', () => {
+        const plugins = wordpress({
+            input: 'resources/js/app.ts',
+            assets: ['tests/__data__/*.png'],
+        })
+
+        const assetsPlugin = plugins.find(plugin => plugin.name === 'wordpress:assets')!
+        const emitFile = vi.fn()
+
+        /* @ts-ignore */
+        assetsPlugin.buildStart!.call({ emitFile })
+
+        expect(emitFile).toHaveBeenCalledWith({ type: 'asset', name: 'dummy.png', originalFileName: expect.stringContaining('dummy.png'), source: expect.any(Buffer) })
+    })
+})
+
+describe('build input', () => {
+    it('keeps an input the user set under rollupOptions', () => {
+        const plugin = wordpress('resources/js/app.ts')[0]
+
+        const config = plugin.config({ build: { rollupOptions: { input: 'resources/js/custom.js' } } }, { command: 'build', mode: 'production' })
+
+        /* @ts-ignore */
+        expect(buildInput(config)).toBe('resources/js/custom.js')
+    })
+})
+
+describe('dev server listening', () => {
+    it('does not throw when the server address is null', () => {
+        const plugin = wordpress('resources/js/app.ts')[0]
+
+        /* @ts-ignore */
+        plugin.configResolved({ envDir: null, mode: 'development', command: 'serve', server: {}, base: '/build/' })
+
+        const listeners: Array<() => void> = []
+        const server = {
+            config: { base: '/build/', server: {}, logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } },
+            middlewares: { use: vi.fn() },
+            httpServer: {
+                once: (event: string, listener: () => void) => {
+                    if (event === 'listening') {
+                        listeners.push(listener)
+                    }
+                },
+                address: () => null,
+            },
+        }
+
+        /* @ts-ignore */
+        plugin.configureServer(server)
+
+        const writeFileSync = vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {})
+
+        expect(() => listeners.forEach(listener => listener())).not.toThrow()
+        expect(writeFileSync).not.toHaveBeenCalled()
+
+        writeFileSync.mockRestore()
     })
 })
 

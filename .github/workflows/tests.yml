@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x, 22.x, latest]
+        vite: [7, 8]
 
     steps:
       - name: Checkout code
@@ -27,6 +28,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Use Vite ${{ matrix.vite }}
+        run: npm install --no-save vite@${{ matrix.vite }}
 
       - name: ESLint
         run: npm run lint
