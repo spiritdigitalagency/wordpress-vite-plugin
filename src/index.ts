@@ -3,9 +3,15 @@ import { AddressInfo } from 'net'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import colors from 'picocolors'
-import { Plugin, loadEnv, UserConfig, ConfigEnv, ResolvedConfig, SSROptions, PluginOption, createLogger } from 'vite'
+import { globSync } from 'tinyglobby'
+import { Plugin, loadEnv, UserConfig, ConfigEnv, ResolvedConfig, SSROptions, PluginOption, createLogger, defaultAllowedOrigins, version as viteVersion } from 'vite'
 import fullReload, { Config as FullReloadConfig } from 'vite-plugin-full-reload'
-import { InputOption } from "rollup"
+
+// Structural copy of Rollup/Rolldown's InputOption, so the types resolve on both Vite 7 (Rollup) and Vite 8 (Rolldown).
+type InputOption = string | string[] | Record<string, string>
+
+// Vite 8 replaced Rollup with Rolldown and renamed build.rollupOptions to build.rolldownOptions.
+const usesRolldown = parseInt(viteVersion, 10) >= 8
 
 interface PluginConfig {
     /**
@@ -55,6 +61,17 @@ interface PluginConfig {
     refresh?: boolean|string|string[]|RefreshConfig|RefreshConfig[]
 
     /**
+     * Asset file glob patterns to include in the build.
+     *
+     * Files matching these patterns will be processed and versioned by Vite,
+     * even if they are not imported in your JavaScript. Useful for assets
+     * that are only referenced from PHP templates.
+     *
+     * @default []
+     */
+    assets?: string|string[]
+
+    /**
      * Transform the code while serving.
      */
     transformOnServe?: (code: string, url: DevServerUrl) => string,
@@ -91,6 +108,7 @@ export default function wordpress(config: string|string[]|PluginConfig): [Wordpr
 
     return [
         resolveWordpressPlugin(pluginConfig),
+        ...resolveAssetPlugin(pluginConfig.assets),
         ...resolveFullReloadConfig(pluginConfig) as Plugin[],
     ];
 }
@@ -126,8 +144,8 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                     manifest: userConfig.build?.manifest ?? (ssr ? false : 'manifest.json'),
                     ssrManifest: userConfig.build?.ssrManifest ?? (ssr ? 'ssr-manifest.json' : false),
                     outDir: userConfig.build?.outDir ?? resolveOutDir(pluginConfig, ssr),
-                    rollupOptions: {
-                        input: userConfig.build?.rollupOptions?.input ?? resolveInput(pluginConfig, ssr)
+                    [usesRolldown ? 'rolldownOptions' : 'rollupOptions']: {
+                        input: resolveUserInput(userConfig) ?? resolveInput(pluginConfig, ssr)
                     },
                     assetsInlineLimit: userConfig.build?.assetsInlineLimit ?? 0,
                 },
@@ -135,7 +153,7 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
                     origin: userConfig.server?.origin ?? 'http://__wordpress_vite_placeholder__.test',
                     cors: userConfig.server?.cors ?? {
                         origin: userConfig.server?.origin ?? [
-                            /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/, // Copied from Vite itself. We can import this once we drop 5.0 support and require Vite 6.1+. Source: https://github.com/vitejs/vite/blob/0c854645bd17960abbe8f01b602d1a1da1a2b9fd/packages/vite/src/node/constants.ts#L200-L201
+                            defaultAllowedOrigins,
                         ],
                     },
                     ...(userConfig.server),
@@ -178,13 +196,17 @@ function resolveWordpressPlugin(pluginConfig: Required<PluginConfig>): Wordpress
             }
         },
         configureServer(server) {
+            if (process.env.VITEST !== undefined) {
+                return
+            }
+
             const envDir = resolvedConfig.envDir || process.cwd()
             const appUrl = loadEnv(resolvedConfig.mode, envDir, 'APP_URL').APP_URL ?? 'undefined'
 
             server.httpServer?.once('listening', () => {
                 const address = server.httpServer?.address()
 
-                const isAddressInfo = (x: string|AddressInfo|null|undefined): x is AddressInfo => typeof x === 'object'
+                const isAddressInfo = (x: string|AddressInfo|null|undefined): x is AddressInfo => typeof x === 'object' && x !== null
                 if (isAddressInfo(address)) {
                     viteDevServerUrl = userConfig.server?.origin ? userConfig.server.origin as DevServerUrl : resolveDevServerUrl(address, server.config, userConfig)
 
@@ -299,6 +321,7 @@ function resolvePluginConfig(config: string|string[]|PluginConfig): Required<Plu
         ssrOutputDirectory: config.ssrOutputDirectory ?? 'bootstrap/ssr',
         refresh: config.refresh ?? false,
         hotFile: config.hotFile ?? path.join((config.publicDirectory ?? 'public'), 'hot'),
+        assets: typeof config.assets === 'string' ? [config.assets] : config.assets ?? [],
         transformOnServe: config.transformOnServe ?? ((code) => code),
     }
 }
@@ -319,6 +342,37 @@ function resolveInput(config: Required<PluginConfig>, ssr: boolean): InputOption
     }
 
     return config.input
+}
+
+/**
+ * The build input the user set explicitly, under either Rollup or Rolldown options.
+ */
+function resolveUserInput(config: UserConfig): InputOption|undefined {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    const build = config.build as any
+
+    return build?.rolldownOptions?.input ?? build?.rollupOptions?.input
+}
+
+/**
+ * Resolve the asset-emitting plugin from the configuration.
+ */
+function resolveAssetPlugin(assets: string|string[]): Plugin[] {
+    if (assets.length === 0) {
+        return []
+    }
+
+    return [{
+        name: 'wordpress:assets',
+        apply: 'build',
+        buildStart() {
+            for (const file of globSync(assets)) {
+                if (fs.statSync(file).isFile()) {
+                    this.emitFile({ type: 'asset', name: path.basename(file), originalFileName: file, source: fs.readFileSync(file) })
+                }
+            }
+        },
+    }]
 }
 
 /**
