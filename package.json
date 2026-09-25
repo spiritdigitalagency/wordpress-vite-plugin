@@ -35,12 +35,13 @@
     },
     "scripts": {
         "build": "npm run build-plugin && npm run build-inertia-helpers",
-        "build-plugin": "rm -rf dist && npm run build-plugin-types && npm run build-plugin-esm && cp src/dev-server-index.html dist/",
+        "build-plugin": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build-plugin-types && npm run build-plugin-esm && node -e \"require('fs').copyFileSync('src/dev-server-index.html','dist/dev-server-index.html')\"",
         "build-plugin-types": "tsc --emitDeclarationOnly",
         "build-plugin-esm": "esbuild src/index.ts --platform=node --format=esm --outfile=dist/index.js",
-        "build-inertia-helpers": "rm -rf inertia-helpers && tsc --project tsconfig.inertia-helpers.json",
+        "build-inertia-helpers": "node -e \"require('fs').rmSync('inertia-helpers',{recursive:true,force:true})\" && tsc --project tsconfig.inertia-helpers.json",
         "lint": "eslint --ext .ts ./src ./tests",
-        "test": "vitest run"
+        "test": "vitest run",
+        "prepack": "npm run build"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3.3.1",
